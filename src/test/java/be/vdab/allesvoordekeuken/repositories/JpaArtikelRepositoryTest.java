@@ -74,4 +74,10 @@ class JpaArtikelRepositoryTest extends AbstractTransactionalJUnit4SpringContextT
     void findByWoordMetNullGaatNiet(){
         assertThatNullPointerException().isThrownBy(() -> repository.findByWoord(null));
     }
+
+    @Test
+    void algemenePrijsverhoging(){
+        assertThat(repository.algemenePrijsverhoging(BigDecimal.TEN)).isEqualTo(super.countRowsInTable(ARTIKELS));
+        assertThat(super.jdbcTemplate.queryForObject("select verkoopprijs from artikels where id=?", BigDecimal.class, idTest())).isEqualByComparingTo("0.99");
+    }
 }
