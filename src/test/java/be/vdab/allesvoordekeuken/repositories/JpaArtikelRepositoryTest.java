@@ -10,6 +10,7 @@ import org.springframework.test.context.junit4.AbstractTransactionalJUnit4Spring
 
 import java.math.BigDecimal;
 
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -49,5 +50,28 @@ class JpaArtikelRepositoryTest extends AbstractTransactionalJUnit4SpringContextT
         repository.create(artikel);
         assertThat(artikel.getId()).isPositive();
         assertThat(super.countRowsInTableWhere(ARTIKELS, "id="+idTest())).isOne();
+    }
+
+    @Test
+    void findByWoord(){
+        assertThat(repository.findByWoord("te")).hasSize(super.countRowsInTableWhere(ARTIKELS, "naam like '%te%'"));
+    }
+
+    @Test
+    void findByWoordGeeftGesorteerdeLijst(){
+        assertThat(repository.findByWoord("e")).hasSize(super.countRowsInTableWhere(ARTIKELS, "naam like '%e%'"))
+                .extracting(artikel -> artikel.getNaam().toLowerCase())
+                .allSatisfy(naam -> assertThat(naam).contains("e"))
+                .isSorted();
+    }
+
+    @Test
+    void findByWoordMetNietsGeeftLegeLijst(){
+        assertThat(repository.findByWoord("")).isEmpty();
+    }
+
+    @Test
+    void findByWoordMetNullGaatNiet(){
+        assertThatNullPointerException().isThrownBy(() -> repository.findByWoord(null));
     }
 }

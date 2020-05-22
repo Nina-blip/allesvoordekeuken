@@ -4,6 +4,8 @@ import be.vdab.allesvoordekeuken.domain.Artikel;
 import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -22,5 +24,14 @@ public class JpaArtikelRepository implements ArtikelRepository {
     @Override
     public void create(Artikel artikel) {
         manager.persist(artikel);
+    }
+
+    @Override
+    public List<Artikel> findByWoord(String woord) {
+        if (woord.isEmpty()){
+            return Collections.EMPTY_LIST;
+        }
+        woord = "%"+woord+"%";
+        return manager.createQuery("select a from Artikel a where a.naam like :woord order by a.naam", Artikel.class).setParameter("woord", woord).getResultList();
     }
 }
