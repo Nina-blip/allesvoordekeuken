@@ -1,6 +1,8 @@
 package be.vdab.allesvoordekeuken.repositories;
 
 import be.vdab.allesvoordekeuken.domain.Artikel;
+import be.vdab.allesvoordekeuken.domain.FoodArtikel;
+import be.vdab.allesvoordekeuken.domain.NonFoodArtikel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -9,6 +11,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit4.AbstractTransactionalJUnit4SpringContextTests;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 import static org.junit.jupiter.api.Assertions.*;
@@ -20,24 +23,32 @@ import static org.assertj.core.api.Assertions.assertThat;
 class JpaArtikelRepositoryTest extends AbstractTransactionalJUnit4SpringContextTests {
     private final JpaArtikelRepository repository;
     private static final String ARTIKELS = "artikels";
-    private Artikel artikel;
+
 
     public JpaArtikelRepositoryTest(JpaArtikelRepository repository) {
         this.repository = repository;
     }
 
-    private long idTest() {
-        return super.jdbcTemplate.queryForObject("select id from artikels where naam='test'", Long.class);
+    private long idTestFoodArtikel() {
+        return super.jdbcTemplate.queryForObject("select id from artikels where naam='testFood'", Long.class);
     }
 
-    @BeforeEach
-    void beforeEach(){
-        artikel = new Artikel("Aardbei", BigDecimal.valueOf(1.7), BigDecimal.valueOf(3.8));
+
+    private long idTestNonFoodArtikel() {
+        return super.jdbcTemplate.queryForObject("select id from artikels where naam='testNonFood'", Long.class);
+    }
+
+
+    @Test
+    void findFoodArtikelById() {
+        assertThat(repository.findById(idTestFoodArtikel()).get().getNaam()).isEqualTo("testFood");
+        assertThat(((FoodArtikel) repository.findById(idTestFoodArtikel()).get()).getHoudbaarheid()).isEqualTo(4);
     }
 
     @Test
-    void findById() {
-        assertThat(repository.findById(idTest()).get().getNaam()).isEqualTo("test");
+    void findNonFoodArtikelById() {
+        assertThat(repository.findById(idTestNonFoodArtikel()).get().getNaam()).isEqualTo("testNonFood");
+        assertThat(((NonFoodArtikel) repository.findById(idTestNonFoodArtikel()).get()).getGarantie()).isEqualTo(10);
     }
 
     @Test
@@ -46,10 +57,17 @@ class JpaArtikelRepositoryTest extends AbstractTransactionalJUnit4SpringContextT
     }
 
     @Test
-    void create(){
+    void createFoodArtikel(){
+        Artikel artikel = new FoodArtikel("aardbei", BigDecimal.valueOf(1.7), BigDecimal.valueOf(3.8), 2);
         repository.create(artikel);
-        assertThat(artikel.getId()).isPositive();
-        assertThat(super.countRowsInTableWhere(ARTIKELS, "id="+idTest())).isOne();
+        assertThat(super.countRowsInTableWhere(ARTIKELS, "id="+artikel.getId())).isOne();
+    }
+
+    @Test
+    void createNonFoodArtikel(){
+        Artikel artikel = new NonFoodArtikel("pleister", BigDecimal.valueOf(2.4), BigDecimal.valueOf(3.2), 12);
+        repository.create(artikel);
+        assertThat(super.countRowsInTableWhere(ARTIKELS, "id="+artikel.getId())).isOne();
     }
 
     @Test
@@ -78,6 +96,6 @@ class JpaArtikelRepositoryTest extends AbstractTransactionalJUnit4SpringContextT
     @Test
     void algemenePrijsverhoging(){
         assertThat(repository.algemenePrijsverhoging(BigDecimal.TEN)).isEqualTo(super.countRowsInTable(ARTIKELS));
-        assertThat(super.jdbcTemplate.queryForObject("select verkoopprijs from artikels where id=?", BigDecimal.class, idTest())).isEqualByComparingTo("0.99");
+        assertThat(super.jdbcTemplate.queryForObject("select verkoopprijs from artikels where id=?", BigDecimal.class, idTestFoodArtikel())).isEqualByComparingTo("0.99");
     }
 }
