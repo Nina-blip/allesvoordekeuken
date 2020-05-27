@@ -1,9 +1,6 @@
 package be.vdab.allesvoordekeuken.repositories;
 
-import be.vdab.allesvoordekeuken.domain.Artikel;
-import be.vdab.allesvoordekeuken.domain.FoodArtikel;
-import be.vdab.allesvoordekeuken.domain.Korting;
-import be.vdab.allesvoordekeuken.domain.NonFoodArtikel;
+import be.vdab.allesvoordekeuken.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -11,6 +8,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit4.AbstractTransactionalJUnit4SpringContextTests;
 
+import javax.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.util.Optional;
 
@@ -20,14 +18,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @Import(JpaArtikelRepository.class)
+@Sql("/insertArtikelGroep.sql")
 @Sql("/insertArtikel.sql")
 class JpaArtikelRepositoryTest extends AbstractTransactionalJUnit4SpringContextTests {
     private final JpaArtikelRepository repository;
+    private final EntityManager manager;
     private static final String ARTIKELS = "artikels";
+    private ArtikelGroep artikelGroep1;
+    private ArtikelGroep artikelGroep2;
 
 
-    public JpaArtikelRepositoryTest(JpaArtikelRepository repository) {
+    public JpaArtikelRepositoryTest(JpaArtikelRepository repository, EntityManager manager) {
         this.repository = repository;
+        this.manager = manager;
+    }
+
+    @BeforeEach
+    void BeforeEach(){
+        artikelGroep1 = new ArtikelGroep("testF");
+        artikelGroep2 = new ArtikelGroep("testNF");
     }
 
     private long idTestFoodArtikel() {
@@ -59,15 +68,19 @@ class JpaArtikelRepositoryTest extends AbstractTransactionalJUnit4SpringContextT
 
     @Test
     void createFoodArtikel(){
-        Artikel artikel = new FoodArtikel("aardbei", BigDecimal.valueOf(1.7), BigDecimal.valueOf(3.8), 2);
+        manager.persist(artikelGroep1);
+        Artikel artikel = new FoodArtikel("aardbei", BigDecimal.valueOf(1.7), BigDecimal.valueOf(3.8), artikelGroep1, 2);
         repository.create(artikel);
+        manager.flush();
         assertThat(super.countRowsInTableWhere(ARTIKELS, "id="+artikel.getId())).isOne();
     }
 
     @Test
     void createNonFoodArtikel(){
-        Artikel artikel = new NonFoodArtikel("pleister", BigDecimal.valueOf(2.4), BigDecimal.valueOf(3.2), 12);
+        manager.persist(artikelGroep2);
+        Artikel artikel = new NonFoodArtikel("pleister", BigDecimal.valueOf(2.4), BigDecimal.valueOf(3.2), artikelGroep2, 12);
         repository.create(artikel);
+        manager.flush();
         assertThat(super.countRowsInTableWhere(ARTIKELS, "id="+artikel.getId())).isOne();
     }
 
@@ -103,5 +116,11 @@ class JpaArtikelRepositoryTest extends AbstractTransactionalJUnit4SpringContextT
     @Test
     void kortingenLezen(){
         assertThat(repository.findById(idTestFoodArtikel()).get().getKortingen()).containsOnly(new Korting(7, BigDecimal.valueOf(15)));
+    }
+
+    @Test
+    void artikelGroepLazyLoaded(){
+        Artikel artikel = repository.findById(idTestFoodArtikel()).get();
+        assertThat(artikel.getArtikelGroep().getNaam()).isEqualTo("test");
     }
 }
