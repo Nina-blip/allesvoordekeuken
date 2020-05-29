@@ -95,6 +95,7 @@ class JpaArtikelRepositoryTest extends AbstractTransactionalJUnit4SpringContextT
                 .extracting(artikel -> artikel.getNaam().toLowerCase())
                 .allSatisfy(naam -> assertThat(naam).contains("e"))
                 .isSorted();
+        assertThat(repository.findByWoord("e")).extracting(artikel -> artikel.getArtikelGroep().getNaam());
     }
 
     @Test

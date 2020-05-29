@@ -33,7 +33,7 @@ public class JpaArtikelRepository implements ArtikelRepository {
             return Collections.EMPTY_LIST;
         }
         woord = "%"+woord+"%";
-        return manager.createQuery("select a from Artikel a where a.naam like :woord order by a.naam", Artikel.class).setParameter("woord", woord).getResultList();
+        return manager.createQuery("select a from Artikel a where a.naam like :woord order by a.naam", Artikel.class).setParameter("woord", woord).setHint("javax.persistence.loadgraph", manager.createEntityGraph(Artikel.MET_ARTIKELGROEPNAAM)).getResultList();
     }
 
     @Override
